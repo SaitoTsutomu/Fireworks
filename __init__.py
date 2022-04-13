@@ -17,7 +17,7 @@ bl_info = {
 }
 
 
-def make_material(name, attr):
+def make_material(st, name, attr):
     mat = bpy.data.materials.new(name=name)
     mat.use_nodes = True
     mat.blend_method = "HASHED"
@@ -32,13 +32,16 @@ def make_material(name, attr):
             element.color = attr_elm.get("color", [1, 1, 1, 1])
         mat.node_tree.links.new(clrm.outputs["Color"], bsdf.inputs["Emission"])
         mat.node_tree.links.new(clrm.outputs["Alpha"], bsdf.inputs["Alpha"])
+        drv = clrm.inputs["Fac"].driver_add("default_value").driver
+        val = st.frame_end - st.frame_start + st.lifetime
+        drv.expression = f"(frame - {st.frame_start}) / {val}"
     else:
         bsdf.inputs["Emission"].default_value = attr.get("color", [1, 1, 1, 1])
     bsdf.inputs["Emission Strength"].default_value = attr.get("strength", 10)
     return mat
 
 
-def make_spark(name, attr):
+def make_spark(st, name, attr):
     obj = bpy.context.object
     bpy.ops.mesh.primitive_cone_add(
         vertices=3,
@@ -50,7 +53,7 @@ def make_spark(name, attr):
     spark.name = name
     spark.hide_set(state=True)
     spark.hide_render = True
-    spark.active_material = make_material(name, attr)
+    spark.active_material = make_material(st, name, attr)
     bpy.context.view_layer.objects.active = obj
     return spark
 
@@ -81,7 +84,7 @@ class CFW_OT_make_fireworks(bpy.types.Operator):
             )
             obj = context.object
             obj.name = name
-            obj.active_material = make_material(name, attr.get("material", {}))
+            obj.active_material = make_material({}, name, attr.get("material", {}))
             launch = attr.get("launch", 1)
             explode = attr.get("explode", 48)
             obj.scale = 0.3, 0.3, 0.3
@@ -101,7 +104,6 @@ class CFW_OT_make_fireworks(bpy.types.Operator):
             obj.keyframe_insert(data_path="location", frame=disappear)
             ptn = r"(launch|explode)\s([+-])\s*(\d+)\s*(?:|#.*)$"
             for psname, psattr in attr.get("particle_systems", {}).items():
-                spark = make_spark(f"{name}_{psname}", psattr.get("material", {}))
                 bpy.ops.object.particle_system_add()
                 ps = obj.particle_systems[-1]
                 ps.name = psname
@@ -116,12 +118,11 @@ class CFW_OT_make_fireworks(bpy.types.Operator):
                 st.lifetime = psattr["lifetime"]
                 st.lifetime_random = 1
                 st.render_type = "OBJECT"
+                spark = make_spark(st, f"{name}_{psname}", psattr.get("material", {}))
                 st.instance_object = spark
                 st.particle_size = attr.get("particle_size", 0.05)
                 st.factor_random = psattr.get("factor_random", 0)
                 st.normal_factor = st.effector_weights.gravity = psattr.get("gravity", 1)
-                val = st.frame_end - st.frame_start + st.lifetime
-                print(f'Set ColorRamp of {spark.name} to "#(frame - {st.frame_start}) / {val}"')
         bpy.context.scene.frame_set(launch)
         return {"FINISHED"}
 
