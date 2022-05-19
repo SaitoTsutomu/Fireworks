@@ -100,7 +100,7 @@ class CFW_OT_make_fireworks(bpy.types.Operator):
             obj.scale = 0.001, 0.001, 0.001
             obj.keyframe_insert(data_path="scale", frame=disappear)
             disappear = (explode - launch) * 2 + launch
-            obj.location = list((obj.location - launch_location) * 2)[:2] + [launch_location[2]]
+            obj.location = list(obj.location * 2 - launch_location)[:2] + [launch_location[2]]
             obj.keyframe_insert(data_path="location", frame=disappear)
             ptn = r"(launch|explode)\s([+-])\s*(\d+)\s*(?:|#.*)$"
             for psname, psattr in attr.get("particle_systems", {}).items():
