@@ -4,7 +4,7 @@ Make Fireworks.
 
 ## Installation
 
-- Download https://github.com/SaitoTsutomu/Fireworks/archive/refs/heads/main.zip
+- Download https://github.com/SaitoTsutomu/Fireworks/archive/refs/heads/master.zip
 - Start Blender.
 - Edit menu -> Preferences
   - Select the "Add-ons" tab.
